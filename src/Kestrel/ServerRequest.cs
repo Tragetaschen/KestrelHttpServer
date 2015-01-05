@@ -175,10 +175,10 @@ namespace Kestrel
             }
         }
 
-        bool IHttpResponseFeature.HeadersSent
-        {
-            get { return _frame.HeadersSent; }
-        }
+        //bool IHttpResponseFeature.HeadersSent
+        //{
+        //    get { return _frame.HeadersSent; }
+        //}
 
         void IHttpResponseFeature.OnSendingHeaders(Action<object> callback, object state)
         {
