@@ -6,8 +6,5 @@
     },
     "frameworks": {
         "dnx451": { }
-    },
-    "compilationOptions": {
-        "allowUnsafe": true
     }
 }
