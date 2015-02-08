@@ -6,8 +6,5 @@
     },
     "frameworks": {
         "aspnet50": { }
-    },
-    "compilationOptions": {
-        "allowUnsafe": true
     }
 }
