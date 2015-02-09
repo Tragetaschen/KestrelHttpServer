@@ -21,7 +21,7 @@ namespace Microsoft.AspNet.Server.Kestrel.Networking
             {
                 var pointer = dlsym(handle, field.Name);
                 var error = dlerror();
-                if (error == IntPtr.Zero)
+                if (error != IntPtr.Zero)
                 {
                     throw new InvalidOperationException("Could not load member: " + field.Name);
                 }

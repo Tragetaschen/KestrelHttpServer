@@ -22,7 +22,7 @@ namespace Microsoft.AspNet.Server.Kestrel.Networking
             }
         }
 
-        [DllImport("c", CharSet = CharSet.Ansi)]
+        [DllImport("libc", CharSet = CharSet.Ansi)]
         static extern int uname([Out] StringBuilder buf);
 
         public static bool IsDarwin
