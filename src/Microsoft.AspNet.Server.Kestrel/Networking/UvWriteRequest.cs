@@ -16,17 +16,18 @@ namespace Microsoft.AspNet.Server.Kestrel.Networking
         private readonly List<GCHandle> _pins = new List<GCHandle>();
 
         private readonly UvStreamHandle _stream;
-        private UvBuffer _uvBuffer;
         private readonly Action<Exception, object> _callback;
         private readonly object _state;
 
         private readonly GCHandle _selfKeepAlive;
-        private readonly GCHandle _bufferHandle;
+        private readonly UvBuffer[] _uvBuffer;
+        private readonly GCHandle[] _bufferHandles;
+        private readonly GCHandle _bufferArrayHandle;
 
         public UvWriteReq(
             UvLoopHandle loop,
             UvStreamHandle stream,
-            byte[] buffer,
+            ArraySegment<byte> buffer,
             Action<Exception, object> callback,
             object state)
             : base(loop.ThreadId, getSize())
@@ -37,10 +38,14 @@ namespace Microsoft.AspNet.Server.Kestrel.Networking
             _state = state;
 
             _selfKeepAlive = GCHandle.Alloc(this, GCHandleType.Normal);
-            _bufferHandle = GCHandle.Alloc(buffer, GCHandleType.Pinned);
-            _uvBuffer = new UvBuffer(
-                _bufferHandle.AddrOfPinnedObject(),
-                buffer.Length);
+            _bufferHandles = new GCHandle[1];
+            _uvBuffer = new UvBuffer[1];
+            _bufferArrayHandle = GCHandle.Alloc(_uvBuffer, GCHandleType.Pinned);
+
+            _bufferHandles[0] = GCHandle.Alloc(buffer.Array, GCHandleType.Pinned);
+            _uvBuffer[0] = new UvBuffer(
+                _bufferHandles[0].AddrOfPinnedObject() + buffer.Offset,
+                buffer.Count);
         }
 
         private static int getSize()
@@ -57,8 +62,8 @@ namespace Microsoft.AspNet.Server.Kestrel.Networking
                 Libuv.ThrowOnError(UnsafeNativeMethods.uv_write(
                     this,
                     _stream.Handle,
-                    ref _uvBuffer,
-                    1,
+                    _uvBuffer,
+                    _uvBuffer.Length,
                     _uv_write_cb));
             }
             catch
@@ -81,7 +86,9 @@ namespace Microsoft.AspNet.Server.Kestrel.Networking
 
         protected override bool ReleaseHandle()
         {
-            _bufferHandle.Free();
+            foreach (var bufferHandle in _bufferHandles)
+                bufferHandle.Free();
+            _bufferArrayHandle.Free();
             _selfKeepAlive.Free();
 
             return base.ReleaseHandle();
