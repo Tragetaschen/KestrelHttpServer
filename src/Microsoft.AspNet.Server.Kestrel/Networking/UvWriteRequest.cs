@@ -19,7 +19,6 @@ namespace Microsoft.AspNet.Server.Kestrel.Networking
         private readonly Action<Exception, object> _callback;
         private readonly object _state;
 
-        private readonly GCHandle _selfKeepAlive;
         private readonly UvBuffer[] _uvBuffer;
         private readonly GCHandle[] _bufferHandles;
         private readonly GCHandle _bufferArrayHandle;
@@ -37,7 +36,6 @@ namespace Microsoft.AspNet.Server.Kestrel.Networking
             _callback = callback;
             _state = state;
 
-            _selfKeepAlive = GCHandle.Alloc(this, GCHandleType.Normal);
             _bufferHandles = new GCHandle[1];
             _uvBuffer = new UvBuffer[1];
             _bufferArrayHandle = GCHandle.Alloc(_uvBuffer, GCHandleType.Pinned);
@@ -89,7 +87,6 @@ namespace Microsoft.AspNet.Server.Kestrel.Networking
             foreach (var bufferHandle in _bufferHandles)
                 bufferHandle.Free();
             _bufferArrayHandle.Free();
-            _selfKeepAlive.Free();
 
             return base.ReleaseHandle();
         }
