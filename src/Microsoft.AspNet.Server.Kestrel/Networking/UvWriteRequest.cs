@@ -16,8 +16,6 @@ namespace Microsoft.AspNet.Server.Kestrel.Networking
         private readonly List<GCHandle> _pins = new List<GCHandle>();
 
         private readonly UvTcpStreamHandle _stream;
-        private readonly Action<Exception, object> _callback;
-        private readonly object _state;
 
         private readonly UvBuffer[] _uvBuffer;
         private readonly GCHandle[] _bufferHandles;
@@ -26,15 +24,11 @@ namespace Microsoft.AspNet.Server.Kestrel.Networking
         public UvWriteReq(
             UvLoopHandle loop,
             UvTcpStreamHandle stream,
-            ArraySegment<byte> buffer,
-            Action<Exception, object> callback,
-            object state)
+            ArraySegment<byte> buffer)
             : base(loop.ThreadId, getSize())
         {
             _uv_write_cb = UvWriteCb;
             _stream = stream;
-            _callback = callback;
-            _state = state;
 
             _bufferHandles = new GCHandle[1];
             _uvBuffer = new UvBuffer[1];
@@ -73,13 +67,11 @@ namespace Microsoft.AspNet.Server.Kestrel.Networking
 
         private void UvWriteCb(IntPtr ptr, int status)
         {
-            var error = Libuv.ExceptionForError(status);
-
             KestrelTrace.Log.ConnectionWriteCallback(0, status);
-            //NOTE: pool this?
 
             Dispose();
-            _callback(error, _state);
+
+            Libuv.ThrowOnError(status);
         }
 
         protected override bool ReleaseHandle()
