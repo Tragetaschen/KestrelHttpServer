@@ -235,7 +235,7 @@ namespace Kestrel
                     _frame.ResponseHeaders["Upgrade"] = values;
                 }
             }
-            _frame.ProduceStart();
+            await _frame.ProduceStartAsync();
             return _frame.DuplexStream;
         }
     }
