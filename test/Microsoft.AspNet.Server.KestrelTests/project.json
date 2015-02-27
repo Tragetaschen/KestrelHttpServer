@@ -8,7 +8,7 @@
         "aspnet50": { }
     },
     "commands": {
-        "run": "xunit.runner.kre",
+        "run": "run",
         "test": "xunit.runner.kre"
     }
 }
