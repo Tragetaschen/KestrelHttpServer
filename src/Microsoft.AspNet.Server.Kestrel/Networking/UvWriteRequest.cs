@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
+using System.Threading.Tasks;
 
 namespace Microsoft.AspNet.Server.Kestrel.Networking
 {
@@ -20,6 +21,8 @@ namespace Microsoft.AspNet.Server.Kestrel.Networking
         private readonly UvBuffer[] _uvBuffer;
         private readonly GCHandle[] _bufferHandles;
         private readonly GCHandle _bufferArrayHandle;
+
+        private readonly TaskCompletionSource<int> _tcs;
 
         public UvWriteReq(
             UvLoopHandle loop,
@@ -38,6 +41,8 @@ namespace Microsoft.AspNet.Server.Kestrel.Networking
             _uvBuffer[0] = new UvBuffer(
                 _bufferHandles[0].AddrOfPinnedObject() + buffer.Offset,
                 buffer.Count);
+
+            _tcs = new TaskCompletionSource<int>();
         }
 
         private static int GetSize()
@@ -45,36 +50,29 @@ namespace Microsoft.AspNet.Server.Kestrel.Networking
             return UnsafeNativeMethods.uv_req_size(RequestType.WRITE);
         }
 
+        public Task Task => _tcs.Task;
+
         public void Write()
         {
-            try
-            {
-                _stream.Validate();
-                Validate();
-                Libuv.ThrowOnError(UnsafeNativeMethods.uv_write(
-                    this,
-                    _stream.Handle,
-                    _uvBuffer,
-                    _uvBuffer.Length,
-                    _uv_write_cb));
-            }
-            catch
-            {
-                Dispose();
-                throw;
-            }
+            _stream.Validate();
+            Validate();
+            Libuv.ThrowOnError(UnsafeNativeMethods.uv_write(
+                this,
+                _stream.Handle,
+                _uvBuffer,
+                _uvBuffer.Length,
+                _uv_write_cb));
         }
 
         private void UvWriteCb(IntPtr ptr, int status)
         {
             KestrelTrace.Log.ConnectionWriteCallback(0, status);
 
-            Dispose();
-
-            if (status == -125 || status == -4081) // UV_ECANCELED on Unix and Windows
-                return;
+            var exception = Libuv.ExceptionForError(status);
+            if (exception == null)
+                _tcs.SetResult(0);
             else
-                Libuv.ThrowOnError(status);
+                _tcs.SetException(exception);
         }
 
         protected override bool ReleaseHandle()
