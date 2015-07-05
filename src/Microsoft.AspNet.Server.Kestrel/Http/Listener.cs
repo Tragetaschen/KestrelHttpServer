@@ -71,7 +71,7 @@ namespace Microsoft.AspNet.Server.Kestrel.Http
             {
                 _listenSocket = new UvTcpListenHandle(
                     Thread.Loop,
-                    new IPEndPoint(IPAddress.Any, port),
+                    new IPEndPoint(IPAddress.IPv6Any, port),
                     10,
                     _connectionCallback);
             });
